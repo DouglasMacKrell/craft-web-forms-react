@@ -1,8 +1,19 @@
 import React from "react";
 import "./index.css";
 
-const validEmailRegex =
-    RegExp('https://cdnza.azureedge.net/^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/');
+const validEmailRegex = RegExp(
+  /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i
+);
+
+const validateForm = (errors) => {
+  let valid = true;
+  Object.values(errors).forEach(
+    //if we have an error string set valid to false
+    (val) => val.length > 0 && (valid = false)
+  );
+
+  return valid;
+};
 
 class PizzaApp extends React.Component {
   state = {
@@ -28,7 +39,7 @@ class PizzaApp extends React.Component {
 
   setGlutenFree = (event) => {
     this.setState({
-      glutenFree: event.target.value,
+      glutenFree: event.target.checked,
     });
   };
 
@@ -44,54 +55,48 @@ class PizzaApp extends React.Component {
     });
   };
 
-  handleChange =(e) => {
-      e.preventDefault()
-      const { name, value } = e.target
-      let errors = this.state.errors
+  handleChange = (event) => {
+    event.preventDefault();
+    const { name, value } = event.target;
+    let errors = this.state.errors;
 
-      switch (name) {
-          case 'pizzaName':
-            errors.pizzaName = 
-                value.length < 5
-                    ? "Pizza Name must be 5 characters long!"
-                    : "";
-            break;
+    switch (name) {
+      case "pizzaName":
+        errors.pizzaName =
+          value.length < 5 ? "Pizza Name must be 5 characters long!" : "";
+        break;
+      case "email":
+        errors.email = validEmailRegex.test(value) ? "" : "Email is not valid";
+        break;
+      case "password":
+        errors.password =
+          value.length < 8 ? "Password must be 8 characters long!" : "";
+        break;
+      default:
+        break;
+    }
 
-          case 'email':
-              errors.email = 
-                validEmailRegex.test(value)
-                 ? ""
-                 : "Email is not valid!"
-            break;
-
-          case 'password':
-              errors.password =
-                value.length < 8
-                 ? "Password must be 8 characters long!"
-                 : ""
-            break;
-          default:
-              break;
-      }
-      this.setState({errors, [name]: value}, () => {
-          console.log(errors)
-      })
-  }
+    this.setState({ errors, [name]: value });
+  };
 
   handleSubmit = (event) => {
     event.preventDefault();
 
-    const { size, glutenFree, topping, instructions } = this.setState;
+    const { size, glutenFree, topping, instructions } = this.state;
 
-    alert(`Your order:
-        Size: ${size}
-        Gluten free ? ${glutenFree ? "yes" : "no"}
-        Topping: ${topping || "none"}
-        Special instructions: ${instructions || "none"}`);
+    if (validateForm(this.state.errors)) {
+      console.info("Valid Form");
+      alert(`Your order:
+      Size: ${size}
+      Gluten free? ${glutenFree ? "yes" : "no"}
+      Topping: ${topping || "none"}
+      Special instructions: ${instructions || "none"}`);
+    } else {
+      console.error("Invalid Form");
+    }
   };
-
   render() {
-    const { size, glutenFree, instructions, topping } = this.setState;
+    const { size, glutenFree, instructions, topping, errors } = this.state;
 
     return (
       <div className="wrapper">
@@ -105,46 +110,45 @@ class PizzaApp extends React.Component {
                 name="pizzaName"
                 onChange={this.handleChange}
               />
+              {errors.pizzaName.length > 0 && (
+                <span className="error">{errors.pizzaName}</span>
+              )}
             </div>
             <div className="email">
               <label>Email</label>
               <input type="email" name="email" onChange={this.handleChange} />
             </div>
-            <div className="password">
-              <label>Password</label>
-              <input
-                type="password"
-                name="password"
-                onChange={this.handleChange}
-              />
+            <label>Size</label>
+            <div className="size">
+              <label>
+                <input
+                  type="radio"
+                  value="small"
+                  checked={size === "small"}
+                  onChange={this.setSize}
+                />
+                Small
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  value="medium"
+                  checked={size === "medium"}
+                  onChange={this.setSize}
+                />
+                Medium
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  value="large"
+                  checked={size === "large"}
+                  onChange={this.setSize}
+                />
+                Large
+              </label>
             </div>
-            <label>
-              <input
-                type="radio"
-                value="small"
-                checked={size === "small"}
-                onChange={this.setSize}
-              />
-              Small
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="medium"
-                checked={size === "medium"}
-                onChange={this.setSize}
-              />
-              Medium
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="large"
-                checked={size === "large"}
-                onChange={this.setSize}
-              />
-              Large
-            </label>
+
             <br />
             <br />
             <div className="topping">
@@ -167,7 +171,7 @@ class PizzaApp extends React.Component {
                 checked={glutenFree}
                 onChange={this.setGlutenFree}
               />
-              GlutenFree
+              Gluten free
             </label>
             <br />
             <br />
@@ -181,9 +185,18 @@ class PizzaApp extends React.Component {
                 />
               </label>
             </div>
+
             <br />
             <br />
-            <button type="submit"> Send Order </button>
+            <div className="password">
+              <label>Password</label>
+              <input
+                type="password"
+                name="password"
+                onChange={this.handleChange}
+              />
+            </div>
+            <button type="submit">Send Order</button>
           </form>
         </div>
       </div>
